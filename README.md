@@ -1,6 +1,6 @@
 # warung_nusantara
 
-A new Flutter project.
+Aplikasi mobile POS untuk menjual makanan nusantara
 
 ## Getting Started
 
