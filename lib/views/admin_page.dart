@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import 'login_page.dart';
+import '../components/custom_appbar.dart';
 import 'admin/list_makanan_page.dart';
 import 'admin/tambah_stok_page.dart';
 import 'admin/riwayat_transaksi_page.dart';
@@ -37,50 +37,12 @@ class _AdminHomePageState extends State<AdminHomePage> {
     setState(() => _selectedIndex = index);
   }
 
-  void _openProfile() {
-    // untuk halaman profile atau logout
-    showDialog(
-      context: context,
-      builder:
-          (context) => AlertDialog(
-            title: Text('Profile Admin'),
-            content: Text('Logout'),
-            actions: [
-              TextButton(
-                onPressed: () => Navigator.pop(context),
-                child: Text(
-                  'Cancel',
-                  style: TextStyle(color: Colors.teal[700]),
-                ),
-              ),
-              TextButton(
-                onPressed:
-                    () => Navigator.pushReplacement(
-                      context,
-                      MaterialPageRoute(builder: (context) => LoginPage()),
-                    ),
-                child: Text(
-                  'Logout',
-                  style: TextStyle(color: Colors.teal[700]),
-                ),
-              ),
-            ],
-          ),
-    );
-  }
-
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(
-        title: Text(_titles[_selectedIndex]),
-        actions: [
-          IconButton(
-            icon: Icon(Icons.account_circle, size: 30),
-            onPressed: _openProfile,
-            tooltip: 'Profile Admin',
-          ),
-        ],
+      appBar: CustomAppbar(
+        title: _titles[_selectedIndex],
+        role: 'Admin',
       ),
       body: AnimatedSwitcher(
         duration: Duration(milliseconds: 300),

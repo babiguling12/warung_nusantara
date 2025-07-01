@@ -22,6 +22,11 @@ class MyApp extends StatelessWidget {
 
     return baseTheme.copyWith(
       textTheme: GoogleFonts.poppinsTextTheme(baseTheme.textTheme),
+      textSelectionTheme: TextSelectionThemeData(
+        cursorColor: Colors.teal, // warna kursor
+        selectionColor: Colors.teal[100], // warna blok saat nge select
+        selectionHandleColor: Colors.teal, // warna titik pegangan blok teks
+      )
     );
   }
 }

@@ -103,7 +103,7 @@ class _LoginPageState extends State<LoginPage> {
                       borderSide: BorderSide(color: Colors.teal),
                     ),
                     focusedErrorBorder: OutlineInputBorder(
-                      borderSide: BorderSide(color: Colors.red),
+                      borderSide: BorderSide(color: Colors.redAccent),
                     ),
                     labelStyle: TextStyle(color: Colors.black54),
                     prefixIcon: Icon(Icons.person),
@@ -127,7 +127,7 @@ class _LoginPageState extends State<LoginPage> {
                       borderSide: BorderSide(color: Colors.teal),
                     ),
                     focusedErrorBorder: OutlineInputBorder(
-                      borderSide: BorderSide(color: Colors.red),
+                      borderSide: BorderSide(color: Colors.redAccent),
                     ),
                     labelStyle: TextStyle(color: Colors.black54),
                     prefixIcon: Icon(Icons.lock),
