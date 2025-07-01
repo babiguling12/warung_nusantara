@@ -1,4 +1,4 @@
-# warung_nusantara
+# warung nusantara
 
 Aplikasi mobile POS untuk menjual makanan nusantara
 
