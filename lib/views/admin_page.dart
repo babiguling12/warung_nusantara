@@ -6,6 +6,7 @@ import 'admin/riwayat_transaksi_page.dart';
 import 'admin/favourite_page.dart';
 import 'admin/kelola_user_page.dart';
 import '../components/custom_bottom_nav.dart';
+import '../services/api_service.dart';
 
 class AdminHomePage extends StatefulWidget {
   const AdminHomePage({super.key});
@@ -33,6 +34,27 @@ class _AdminHomePageState extends State<AdminHomePage> {
     'Kelola Kasir',
   ];
 
+  final List<IconData> _icons = [
+    Icons.fastfood,
+    Icons.favorite,
+    Icons.add_box,
+    Icons.history,
+    Icons.people,
+  ];
+
+  final List<String> _labels = [
+    'Makanan',
+    'Favorite',
+    'Stok',
+    'Riwayat',
+    'Kasir',
+  ];
+  
+  void initState() {
+    super.initState();
+    ApiService().syncMakananOnce();
+  }
+
   void _onItemTapped(int index) {
     setState(() => _selectedIndex = index);
   }
@@ -54,6 +76,8 @@ class _AdminHomePageState extends State<AdminHomePage> {
       bottomNavigationBar: CustomBottomNav(
         currentIndex: _selectedIndex,
         onTap: _onItemTapped,
+        icons: _icons,
+        labels: _labels,
       ),
     );
   }

@@ -31,8 +31,8 @@ class Makanan {
     id: map['id'],
     nama: map['nama'],
     daerah: map['daerah'],
-    harga: map['harga'],
-    stok: map['stok'],
+    harga: double.parse(map['harga'].toString()).toInt(),
+    stok: double.parse(map['stok'].toString()).toInt(),
     deskripsi: map['deskripsi'],
     gambar: map['gambar']
   );

@@ -25,7 +25,10 @@ class CustomAppbar extends StatelessWidget implements PreferredSizeWidget {
                       context,
                       MaterialPageRoute(builder: (context) => LoginPage()),
                     ),
-                child: Text('Logout', style: TextStyle(color: Colors.teal[700])),
+                child: Text(
+                  'Logout',
+                  style: TextStyle(color: Colors.teal[700]),
+                ),
               ),
             ],
           ),
@@ -35,7 +38,14 @@ class CustomAppbar extends StatelessWidget implements PreferredSizeWidget {
   @override
   Widget build(BuildContext context) {
     return AppBar(
-      title: Text(title),
+      title: Text(
+        title,
+        style: TextStyle(
+          color: Colors.teal[700],
+          fontWeight: FontWeight.w600,
+          fontSize: 21,
+        ),
+      ),
       actions: [
         IconButton(
           icon: Icon(Icons.logout_rounded, size: 30),

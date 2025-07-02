@@ -3,29 +3,16 @@ import 'package:flutter/material.dart';
 class CustomBottomNav extends StatefulWidget {
   final int currentIndex;
   final Function(int) onTap;
+  final List<IconData> icons;
+  final List<String> labels;
 
-  const CustomBottomNav({super.key, required this.currentIndex, required this.onTap});
+  const CustomBottomNav({super.key, required this.currentIndex, required this.onTap, required this.icons,  required this.labels});
 
   @override
   State<CustomBottomNav> createState() => _CustomButtonNavState();
 }
 
 class _CustomButtonNavState extends State<CustomBottomNav> {
-  final List<IconData> _icons = [
-    Icons.fastfood,
-    Icons.favorite,
-    Icons.add_box,
-    Icons.history,
-    Icons.people,
-  ];
-
-  final List<String> _labels = [
-    'Makanan',
-    'Favorite',
-    'Stok',
-    'Riwayat',
-    'Kasir',
-  ];
 
   @override
   Widget build(BuildContext context) {
@@ -43,7 +30,7 @@ class _CustomButtonNavState extends State<CustomBottomNav> {
       ),
       child: Row(
         mainAxisAlignment: MainAxisAlignment.spaceAround,
-        children: List.generate(_icons.length, (index) {
+        children: List.generate(widget.icons.length, (index) {
           final selected = index == widget.currentIndex;
 
           return GestureDetector(
@@ -64,7 +51,7 @@ class _CustomButtonNavState extends State<CustomBottomNav> {
                 mainAxisSize: MainAxisSize.min,
                 children: [
                   Icon(
-                    _icons[index],
+                    widget.icons[index],
                     color: selected ? Colors.teal : Colors.white70,
                     size: 24,
                   ),
@@ -75,7 +62,7 @@ class _CustomButtonNavState extends State<CustomBottomNav> {
                     child:
                         selected
                             ? Text(
-                              _labels[index],
+                              widget.labels[index],
                               style: TextStyle(
                                 color: Colors.teal,
                                 fontWeight: FontWeight.bold,
