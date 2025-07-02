@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:shared_preferences/shared_preferences.dart';
+import 'package:lottie/lottie.dart';
 import '../databases/db_helper.dart';
 import 'admin_page.dart';
 import 'kasir_page.dart';
@@ -79,8 +80,8 @@ class _LoginPageState extends State<LoginPage> {
             child: Column(
               mainAxisAlignment: MainAxisAlignment.center,
               children: [
-                Icon(Icons.lock_outline, size: 64, color: Colors.teal[600]),
-                SizedBox(height: 16),
+                Lottie.asset('assets/lottie/lock.json', height: 80),
+                SizedBox(height: 7),
                 Text(
                   'Login',
                   style: TextStyle(fontSize: 24, fontWeight: FontWeight.bold),

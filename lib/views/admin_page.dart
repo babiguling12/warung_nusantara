@@ -28,7 +28,7 @@ class _AdminHomePageState extends State<AdminHomePage> {
 
   final List<String> _titles = const [
     'List Makanan',
-    'Favourite',
+    'Favorite',
     'Tambah Stok',
     'Riwayat Transaksi',
     'Kelola Kasir',
