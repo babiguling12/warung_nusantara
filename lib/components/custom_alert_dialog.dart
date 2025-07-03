@@ -8,7 +8,7 @@ void customAlertDialog({
   String confirmText = 'Ya',
   String cancelText = 'Batal',
   Color iconColor = Colors.teal,
-  IconData icon = Icons.info_outline,
+  IconData icon = Icons.warning_amber_outlined,
 }) {
   showDialog(
     context: context,

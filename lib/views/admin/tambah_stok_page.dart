@@ -110,7 +110,7 @@ class _TambahStokPageState extends State<TambahStokPage> {
                             setState(() => _selectedMakanan = val);
                           },
                           validator:
-                              (val) => val == null ? 'Pilih makanan' : null,
+                              (val) => val == null ? 'Pilih makanan dulu' : null,
                         ),
                         SizedBox(height: 20),
                         TextFormField(

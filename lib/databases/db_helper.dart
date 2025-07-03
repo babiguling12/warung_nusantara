@@ -231,9 +231,21 @@ class DbHelper {
 
   // ===================== USERS ====================== //
   // Menambah data kasir
-  Future<void> insertKasir(Users users) async {
+  Future<void> insertUsers(Users users) async {
     final dbClient = await db;
     await dbClient.insert('users', users.toMap());
+  }
+
+  Future<bool> isUsernameTaken(String username, {int? excludeId}) async {
+    final dbClient = await db;
+    final result = await dbClient.query(
+      'users',
+      where: excludeId != null ? 'username = ? AND id != ?' : 'username = ?', 
+      whereArgs: excludeId != null ? [username, excludeId] : [username],
+      // jika excludeId ada artinya sedang ada dalam mode edit, maka akan mengecek username yang sama namun tidak dengan id dia sendiri. 
+      // Jika excludeId tidak ada artinya sedang dalam mode tambah, maka hanya mengecek username yang sama saja
+    );
+    return result.isNotEmpty;
   }
 
   // Ambil data user
@@ -250,6 +262,21 @@ class DbHelper {
       'users',
       where: 'id = ?',
       whereArgs: [id],
+    );
+  }
+
+  // Ubah data user
+  Future<void> updateUsers(Users users) async {
+    final dbClient = await db;
+    await dbClient.update(
+      'users',
+      {
+        'username': users.username,
+        'password': hashPassword(users.password),
+        'role' : users.role
+      },
+      where: 'id = ?',
+      whereArgs: [users.id],
     );
   }
 }
