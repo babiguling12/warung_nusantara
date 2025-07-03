@@ -33,14 +33,49 @@ class _TransaksiPageState extends State<TransaksiPage> {
     });
   }
 
-  void _tambahKeranjang(Makanan makanan) {
-    setState(() => _keranjang[makanan] = (_keranjang[makanan] ?? 0) + 1);
+  void _tambahKeranjang(Makanan makanan, {bool showNotif = true}) {
+    final jumlahDiKeranjang = _keranjang[makanan] ?? 0;
+
+    if (makanan.stok == 0) {
+      if (showNotif) {
+        showCustomSnackbar(
+          context: context,
+          message: 'Stok ${makanan.nama} habis!',
+          backgroundColor: Colors.redAccent,
+          icon: Icons.warning_amber_outlined,
+        );
+      }
+      return;
+    }
+
+    if (jumlahDiKeranjang >= makanan.stok) {
+      if (showNotif) {
+        showCustomSnackbar(
+          context: context,
+          message: 'Stok ${makanan.nama} tidak mencukupi!',
+          backgroundColor: Colors.redAccent,
+          icon: Icons.warning_amber_outlined,
+        );
+      }
+      return;
+    }
+
+    // menambahkan makanan ke keranjang
+    setState(() => _keranjang[makanan] = (jumlahDiKeranjang + 1));
+
+    if (showNotif) {
+      showCustomSnackbar(
+        context: context,
+        message: '${makanan.nama} berhasil ditambahkan ke keranjang!',
+      );
+    }
   }
 
   void _kurangiDariKeranjang(Makanan makanan) {
     if (_keranjang.containsKey(makanan)) {
       setState(() {
         final qty = _keranjang[makanan]!;
+
         if (qty > 1) {
           _keranjang[makanan] = qty - 1;
         } else {
@@ -141,7 +176,10 @@ class _TransaksiPageState extends State<TransaksiPage> {
                                               Icons.add_circle_outline,
                                             ),
                                             onPressed: () {
-                                              _tambahKeranjang(makanan);
+                                              _tambahKeranjang(
+                                                makanan,
+                                                showNotif: false,
+                                              );
                                               setStateDialog(() {});
                                             },
                                           ),
@@ -234,7 +272,16 @@ class _TransaksiPageState extends State<TransaksiPage> {
                   ),
                   Spacer(),
                   InkWell(
-                    onTap: _keranjang.isNotEmpty ? _showKeranjangDialog : null,
+                    onTap:
+                        () =>
+                            _keranjang.isNotEmpty
+                                ? _showKeranjangDialog
+                                : showCustomSnackbar(
+                                  context: context,
+                                  message: 'Keranjang masih kosong!',
+                                  backgroundColor: Colors.redAccent,
+                                  icon: Icons.warning_amber_outlined,
+                                ),
                     child: Stack(
                       children: [
                         Icon(
@@ -363,20 +410,7 @@ class _TransaksiPageState extends State<TransaksiPage> {
 
   Widget _makananCard(Makanan makanan) {
     return GestureDetector(
-      onTap: () {
-        if (makanan.stok > 0) {
-          _tambahKeranjang(makanan);
-          showCustomSnackbar(
-            context: context,
-            message: '${makanan.nama} berhasil ditambahkan ke keranjang!',
-          );
-        } else {
-          showCustomSnackbar(
-            context: context,
-            message: '${makanan.nama} sedang habis!',
-          );
-        }
-      },
+      onTap: () => _tambahKeranjang(makanan),
       child: Card(
         elevation: 4,
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
