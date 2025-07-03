@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:warung_nusantara/utils/format_number.dart';
 import '../../databases/db_helper.dart';
 import '../../models/makanan.dart';
 import '../../components/custom_alert_dialog.dart';
@@ -83,7 +84,7 @@ class _FavouritePageState extends State<FavouritePage> {
                   style: TextStyle(fontWeight: FontWeight.w600, fontSize: 16),
                 ),
                 subtitle: Text(
-                  'Rp ${makanan.harga}',
+                  formatRupiah(makanan.harga),
                   style: TextStyle(
                     fontWeight: FontWeight.w500,
                     color: Colors.teal[700],

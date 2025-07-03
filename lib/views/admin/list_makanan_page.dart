@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:warung_nusantara/components/custom_snackbar.dart';
 import '../../databases/db_helper.dart';
 import '../../models/makanan.dart';
+import '../../utils/format_number.dart';
 
 class ListMakananPage extends StatefulWidget {
   const ListMakananPage({super.key});
@@ -199,7 +200,7 @@ class _ListMakananPageState extends State<ListMakananPage> {
                         const SizedBox(width: 4),
                         Flexible(
                           child: Text(
-                            'Rp ${makanan.harga}',
+                            formatRupiah(makanan.harga),
                             style: TextStyle(
                               color: Colors.teal[700],
                               fontWeight: FontWeight.w600,
