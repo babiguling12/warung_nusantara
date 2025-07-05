@@ -1,6 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:lottie/lottie.dart';
+import 'package:shared_preferences/shared_preferences.dart';
+import '../../models/transaksi_detail.dart';
 import '../../models/makanan.dart';
+import '../../models/transaksi.dart';
 import '../../databases/db_helper.dart';
 import '../../components/custom_snackbar.dart';
 import '../../utils/format_number.dart';
@@ -14,6 +17,8 @@ class TransaksiPage extends StatefulWidget {
 
 class _TransaksiPageState extends State<TransaksiPage> {
   final DbHelper db = DbHelper();
+
+  int? _kasirId;
   List<Makanan> _makananList = [];
   Map<Makanan, int> _keranjang = {};
 
@@ -23,6 +28,7 @@ class _TransaksiPageState extends State<TransaksiPage> {
   void initState() {
     super.initState();
     _loadMakanan();
+    _loadKasirId();
   }
 
   Future<void> _loadMakanan() async {
@@ -31,6 +37,11 @@ class _TransaksiPageState extends State<TransaksiPage> {
       _makananList = result;
       _isLoading = false;
     });
+  }
+
+  Future<void> _loadKasirId() async {
+    final prefs = await SharedPreferences.getInstance();
+    setState(() => _kasirId = prefs.getInt('kasir_id'));
   }
 
   void _tambahKeranjang(Makanan makanan, {bool showNotif = true}) {
@@ -87,13 +98,13 @@ class _TransaksiPageState extends State<TransaksiPage> {
         Navigator.pop(context); // Tutup dialog klo keranjang udh kosong
         showCustomSnackbar(
           context: context,
-          message: '${makanan.nama} berhasil dihapus dari keranjang!',
+          message: 'Semua makanan berhasil dihapus dari keranjang!',
         );
       }
     }
   }
 
-  void _checkOut() {
+  void _checkOut() async {
     if (_keranjang.isEmpty) {
       showCustomSnackbar(
         context: context,
@@ -103,10 +114,64 @@ class _TransaksiPageState extends State<TransaksiPage> {
       );
       return;
     }
+
+    final now = DateTime.now();
+    final tanggal = now.toIso8601String();
+    final total = _hitungTotal();
+
+    if (_kasirId == null) {
+      showCustomSnackbar(
+        context: context,
+        message: 'Kasir tidak ditemukan!',
+        backgroundColor: Colors.redAccent,
+        icon: Icons.warning_amber_outlined,
+      );
+      return;
+    }
+
+    final transaksi = Transaksi(tanggal: tanggal, total: total, kasir_id: _kasirId!);
+
+    final List<TransaksiDetail> detailList =
+        _keranjang.entries.map((entry) {
+          return TransaksiDetail(
+            transaksi_id: 0,
+            makanan_id: entry.key.id!,
+            qty: entry.value,
+            subtotal: (entry.key.harga * entry.value).toDouble(),
+          );
+        }).toList();
+
     // Proses check out
-    // Setelah check out selesai, kosongkan keranjang
-    setState(() => _keranjang.clear());
-    showCustomSnackbar(context: context, message: 'Transaksi berhasil!');
+    try {
+      await db.insertTransaksi(transaksi, detailList);
+
+      // Update stok makanan untuk tampilan
+      for (final entry in _keranjang.entries) {
+        final makanan = entry.key;
+        final qtyDibeli = entry.value;
+
+        final index = _makananList.indexWhere((mkn) => mkn.id == makanan.id);
+        if (index != -1) {
+          _makananList[index] = _makananList[index].copyWith(
+            stok: _makananList[index].stok - qtyDibeli,
+          );
+        }
+      }
+      // Mengosongkan keranjang setelah check out
+      setState(() => _keranjang.clear());
+
+      if (_keranjang.isEmpty) {
+        Navigator.pop(context);
+        showCustomSnackbar(context: context, message: 'Transaksi Berhasil!');
+      }
+    } catch (e) {
+      showCustomSnackbar(
+        context: context,
+        message: 'Terjadi kesalahan saat menyimpan transaksi!',
+        backgroundColor: Colors.redAccent,
+        icon: Icons.warning_amber_outlined,
+      );
+    }
   }
 
   int _hitungTotal() {
@@ -118,124 +183,185 @@ class _TransaksiPageState extends State<TransaksiPage> {
   }
 
   void _showKeranjangDialog() {
+    TextEditingController _uangDibayarController = TextEditingController();
+    String? errorUangKurang;
+    int uangKembalian = 0;
+
     showDialog(
       context: context,
       builder: (context) {
         return StatefulBuilder(
           builder: (context, setStateDialog) {
+            final total = _hitungTotal();
+
             return Dialog(
               shape: RoundedRectangleBorder(
                 borderRadius: BorderRadius.circular(20),
               ),
               child: Container(
-                padding: EdgeInsets.fromLTRB(16, 16, 16, 24),
-                constraints: BoxConstraints(
-                  maxHeight: MediaQuery.of(context).size.height * 0.7,
+                padding: EdgeInsets.fromLTRB(
+                  16,
+                  16,
+                  16,
+                  MediaQuery.of(context).viewInsets.bottom + 24,
                 ),
-                child: Column(
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    LottieBuilder.asset(
-                      'assets/lottie/basket.json',
-                      height: 100,
-                    ),
-                    SizedBox(height: 16),
-                    Expanded(
-                      child:
-                          _keranjang.isEmpty
-                              ? Center(child: Text('Keranjang masih kosong!'))
-                              : ListView.separated(
-                                itemCount: _keranjang.length,
-                                separatorBuilder: (_, __) => const Divider(),
-                                itemBuilder: (context, index) {
-                                  final item = _keranjang.entries.elementAt(
-                                    index,
-                                  );
-                                  final makanan = item.key;
-                                  final qty = item.value;
+                constraints: BoxConstraints(
+                  maxHeight: MediaQuery.of(context).size.height * 0.75,
+                ),
+                child: SingleChildScrollView(
+                  child: Column(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      LottieBuilder.asset(
+                        'assets/lottie/basket.json',
+                        height: 100,
+                      ),
+                      SizedBox(height: 16),
+                      SizedBox(
+                        height: 200,
+                        child:
+                            _keranjang.isEmpty
+                                ? Center(child: Text('Keranjang masih kosong!'))
+                                : ListView.separated(
+                                  itemCount: _keranjang.length,
+                                  separatorBuilder: (_, __) => const Divider(),
+                                  itemBuilder: (context, index) {
+                                    final item = _keranjang.entries.elementAt(
+                                      index,
+                                    );
+                                    final makanan = item.key;
+                                    final qty = item.value;
 
-                                  return Row(
-                                    children: [
-                                      Expanded(child: Text(makanan.nama)),
-                                      Text(formatRupiah(makanan.harga)),
-                                      SizedBox(width: 10),
-                                      Row(
-                                        children: [
-                                          IconButton(
-                                            icon: Icon(
-                                              Icons.remove_circle_outline,
+                                    return Row(
+                                      children: [
+                                        Expanded(child: Text(makanan.nama)),
+                                        Text(formatRupiah(makanan.harga)),
+                                        SizedBox(width: 10),
+                                        Row(
+                                          children: [
+                                            IconButton(
+                                              icon: Icon(
+                                                Icons.remove_circle_outline,
+                                              ),
+                                              onPressed: () {
+                                                _kurangiDariKeranjang(makanan);
+                                                setStateDialog(() {});
+                                              },
                                             ),
-                                            onPressed: () {
-                                              _kurangiDariKeranjang(makanan);
-                                              setStateDialog(() {});
-                                            },
-                                          ),
-                                          Text('$qty'),
-                                          IconButton(
-                                            icon: Icon(
-                                              Icons.add_circle_outline,
+                                            Text('$qty'),
+                                            IconButton(
+                                              icon: Icon(
+                                                Icons.add_circle_outline,
+                                              ),
+                                              onPressed: () {
+                                                _tambahKeranjang(
+                                                  makanan,
+                                                  showNotif: false,
+                                                );
+                                                setStateDialog(() {});
+                                              },
                                             ),
-                                            onPressed: () {
-                                              _tambahKeranjang(
-                                                makanan,
-                                                showNotif: false,
-                                              );
-                                              setStateDialog(() {});
-                                            },
-                                          ),
-                                        ],
-                                      ),
-                                    ],
-                                  );
-                                },
+                                          ],
+                                        ),
+                                      ],
+                                    );
+                                  },
+                                ),
+                      ),
+                      Divider(),
+                      
+                          Row(
+                            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                            children: [
+                              Text('Total:', style: TextStyle(fontSize: 16)),
+                              Text(
+                                formatRupiah(total),
+                                style: TextStyle(
+                                  fontSize: 16,
+                                  fontWeight: FontWeight.bold,
+                                  color: Colors.teal[800],
+                                ),
                               ),
-                    ),
-                    Divider(),
-                    Builder(
-                      builder: (context) {
-                        if (_keranjang.isEmpty) {
-                          return SizedBox.shrink();
-                        }
+                            ],
+                          ),
+                      SizedBox(height: 16),
 
-                        final total = _hitungTotal();
+                      // input uang dibayar
+                      TextField(
+                        controller: _uangDibayarController,
+                        keyboardType: TextInputType.number,
+                        decoration: InputDecoration(
+                          labelText: 'Uang Dibayar',
+                          prefixIcon: Icon(Icons.attach_money),
+                          border: OutlineInputBorder(
+                            borderRadius: BorderRadius.circular(12),
+                          ),
+                          focusedBorder: OutlineInputBorder(
+                            borderSide: BorderSide(color: Colors.teal[800]!),
+                          ),
+                          labelStyle: TextStyle(color: Colors.black54),
+                          filled: true,
+                          fillColor: Colors.grey[100],
+                          errorText: errorUangKurang,
+                          errorStyle: TextStyle(color: Colors.redAccent),
+                        ),
+                        onChanged: (value) {
+                          final uangDibayar = int.tryParse(value) ?? 0;
+                          setStateDialog(() {
+                            if (uangDibayar < total) {
+                              errorUangKurang = 'Uang dibayar kurang';
+                              uangKembalian = 0;
+                            } else {
+                              errorUangKurang = null;
+                              uangKembalian = uangDibayar - total;
+                            }
+                          });
+                        },
+                      ),
+                      SizedBox(height: 12),
 
-                        return Row(
+                      // kembalian
+                      if (uangKembalian > 0)
+                        Row(
                           mainAxisAlignment: MainAxisAlignment.spaceBetween,
                           children: [
-                            Text('Total:', style: TextStyle(fontSize: 16)),
+                            Text('Kembalian', style: TextStyle(fontSize: 16)),
                             Text(
-                              formatRupiah(total),
+                              formatRupiah(uangKembalian),
                               style: TextStyle(
                                 fontSize: 16,
                                 fontWeight: FontWeight.bold,
-                                color: Colors.teal[800],
+                                color: Colors.teal[700],
                               ),
                             ),
                           ],
-                        );
-                      },
-                    ),
-                    SizedBox(height: 16),
-                    SizedBox(
-                      width: double.infinity,
-                      child: ElevatedButton.icon(
-                        icon: Icon(Icons.payment),
-                        label: Text('Bayar'),
-                        style: ElevatedButton.styleFrom(
-                          backgroundColor: Colors.teal,
-                          foregroundColor: Colors.white,
-                          padding: EdgeInsets.symmetric(vertical: 12),
-                          shape: RoundedRectangleBorder(
-                            borderRadius: BorderRadius.circular(12),
-                          ),
                         ),
-                        onPressed: () {
-                          Navigator.pop(context);
-                          _checkOut();
-                        },
+                      SizedBox(height: 16),
+                      SizedBox(
+                        width: double.infinity,
+                        child: ElevatedButton.icon(
+                          icon: Icon(Icons.payment),
+                          label: Text('Bayar dulu Yuk!'),
+                          style: ElevatedButton.styleFrom(
+                            backgroundColor: Colors.teal,
+                            foregroundColor: Colors.white,
+                            padding: EdgeInsets.symmetric(vertical: 12),
+                            shape: RoundedRectangleBorder(
+                              borderRadius: BorderRadius.circular(12),
+                            ),
+                          ),
+                          onPressed: () {
+                            final uangDibayar = int.tryParse(_uangDibayarController.text) ?? 0;
+                            if (uangDibayar < total) {
+                              setStateDialog(() => errorUangKurang = 'Uang dibayar kurang');
+                            } else {
+                              _checkOut();
+                            }
+                          },
+                        ),
                       ),
-                    ),
-                  ],
+                    ],
+                  ),
                 ),
               ),
             );
@@ -275,7 +401,7 @@ class _TransaksiPageState extends State<TransaksiPage> {
                     onTap:
                         () =>
                             _keranjang.isNotEmpty
-                                ? _showKeranjangDialog
+                                ? _showKeranjangDialog()
                                 : showCustomSnackbar(
                                   context: context,
                                   message: 'Keranjang masih kosong!',
@@ -317,6 +443,7 @@ class _TransaksiPageState extends State<TransaksiPage> {
             // GRID MENU MAKANAN
             Expanded(
               child: GridView.builder(
+                physics: BouncingScrollPhysics(),
                 padding: EdgeInsets.only(
                   left: 12,
                   right: 12,
@@ -387,9 +514,15 @@ class _TransaksiPageState extends State<TransaksiPage> {
                         ),
                         SizedBox(height: 12),
                         ElevatedButton.icon(
-                          onPressed: () => _checkOut(),
-                          icon: Icon(Icons.payment, color: Colors.white),
-                          label: Text('Bayar Sekarang'),
+                          onPressed: () => _showKeranjangDialog(),
+                          icon: Icon(
+                            Icons.shopping_basket_outlined,
+                            color: Colors.white,
+                          ),
+                          label: Text(
+                            'Lihat Keranjang',
+                            style: TextStyle(color: Colors.white),
+                          ),
                           style: ElevatedButton.styleFrom(
                             backgroundColor: Colors.teal,
                             foregroundColor: Colors.white,

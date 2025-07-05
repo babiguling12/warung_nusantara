@@ -1,9 +1,10 @@
 import 'package:flutter/material.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 import 'admin/list_makanan_page.dart';
 import 'admin/tambah_stok_page.dart';
 import 'admin/favourite_page.dart';
 import 'admin/kelola_user_page.dart';
-import 'riwayat_transaksi_page.dart';
+import 'history/riwayat_transaksi_page.dart';
 import '../components/custom_appbar.dart';
 import '../components/custom_bottom_nav.dart';
 import '../services/api_service.dart';
@@ -17,6 +18,7 @@ class AdminHomePage extends StatefulWidget {
 
 class _AdminHomePageState extends State<AdminHomePage> {
   int _selectedIndex = 0;
+  String? username;
 
   final List<Widget> _pages = const [
     ListMakananPage(),
@@ -53,10 +55,16 @@ class _AdminHomePageState extends State<AdminHomePage> {
   void initState() {
     super.initState();
     ApiService().syncMakananOnce();
+    _loadUser();
   }
 
   void _onItemTapped(int index) {
     setState(() => _selectedIndex = index);
+  }
+
+  Future<void> _loadUser() async {
+    final prefs = await SharedPreferences.getInstance();
+    setState(() => username = prefs.getString('username'));
   }
 
   @override
@@ -64,7 +72,7 @@ class _AdminHomePageState extends State<AdminHomePage> {
     return Scaffold(
       appBar: CustomAppbar(
         title: _titles[_selectedIndex],
-        role: 'Admin',
+        username: '$username',
       ),
       body: AnimatedSwitcher(
         duration: Duration(milliseconds: 300),

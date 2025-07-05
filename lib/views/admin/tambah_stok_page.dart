@@ -40,19 +40,24 @@ class _TambahStokPageState extends State<TambahStokPage> {
       await db.tambahStok(_selectedMakanan!.id!, jumlahTambahStok);
 
       if (!mounted) return; // mounted fungsinya mengecek apakah widget masih ada sblm memanggil setState()
-      showCustomSnackbar(
-        context: context,
-        message: 'Stok ${_selectedMakanan!.nama} berhasil ditambahkan!',
-      );
 
-      // reset form
+      // Ambil ulang data makanan terbaru dari database
+      final updatedMakananList = await db.getAllMakanan();
+      final updatedSelectedMakanan = updatedMakananList.firstWhere((makanan) => makanan.id == _selectedMakanan!.id);
+
       setState(() {
-        _selectedMakanan = null;
+        _makananList = updatedMakananList;
+        _selectedMakanan = updatedSelectedMakanan;
         _stockController.clear();
       });
 
       // tutup keyboard dan hapus focus
       FocusScope.of(context).unfocus();
+
+      showCustomSnackbar(
+        context: context,
+        message: 'Stok ${_selectedMakanan!.nama} berhasil ditambahkan!',
+      );
     }
   }
 

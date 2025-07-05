@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
-import 'riwayat_transaksi_page.dart';
+import 'package:shared_preferences/shared_preferences.dart';
+import 'history/riwayat_transaksi_page.dart';
 import 'kasir/transaksi_page.dart';
 import '../components/custom_appbar.dart';
 import '../components/custom_bottom_nav.dart';
@@ -12,6 +13,7 @@ class KasirHomePage extends StatefulWidget {
 }
 
 class _KasirHomePageState extends State<KasirHomePage> {
+  String? username;
   int _selectedIndex = 0;
 
   final List<Widget> _pages = const [
@@ -36,10 +38,16 @@ class _KasirHomePageState extends State<KasirHomePage> {
   
   void initState() {
     super.initState();
+    _loadUser();
   }
 
   void _onItemTapped(int index) {
     setState(() => _selectedIndex = index);
+  }
+
+  Future<void> _loadUser() async {
+    final prefs = await SharedPreferences.getInstance();
+    setState(() => username = prefs.getString('username'));
   }
 
   @override
@@ -47,7 +55,7 @@ class _KasirHomePageState extends State<KasirHomePage> {
     return Scaffold(
       appBar: CustomAppbar(
         title: _titles[_selectedIndex],
-        role: 'Kasir',
+        username: '$username',
       ),
       body: AnimatedSwitcher(
         duration: Duration(milliseconds: 300),

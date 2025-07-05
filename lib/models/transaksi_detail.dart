@@ -3,7 +3,7 @@ class TransaksiDetail {
   final int transaksi_id;
   final int makanan_id;
   final int qty;
-  final int subtotal;
+  final double subtotal;
 
   TransaksiDetail({
     this.id,
@@ -43,7 +43,8 @@ class TransaksiDetail {
       transaksi_id: transaksi_id ?? this.transaksi_id,
       makanan_id: makanan_id ?? this.makanan_id,
       qty: qty ?? this.qty,
-      subtotal: subtotal ?? this.subtotal,
+      subtotal: subtotal?.toDouble() ?? this.subtotal,
     );
   }
 }
+

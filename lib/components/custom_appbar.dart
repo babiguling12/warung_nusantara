@@ -1,23 +1,25 @@
 import 'package:flutter/material.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 import '../views/login_page.dart';
 import 'custom_alert_dialog.dart';
 
 class CustomAppbar extends StatelessWidget implements PreferredSizeWidget {
   final String title;
-  final String role;
+  final String username;
 
-  CustomAppbar({required this.title, required this.role});
+  CustomAppbar({required this.title, required this.username});
 
   void _showLogoutDialog(BuildContext context) {
     customAlertDialog(
       context: context,
-      title: '$role Logout',
-      content: 'Apakah Anda yakin ingin logout?',
-      onConfirm: () => Navigator.pushAndRemoveUntil(
-        context,
-        MaterialPageRoute(builder: (context) => LoginPage()),
-        (route) => false,
-      ),
+      title: 'Logout Warning',
+      content: 'Apakah $username yakin ingin logout?',
+      onConfirm:
+          () => Navigator.pushAndRemoveUntil(
+            context,
+            MaterialPageRoute(builder: (context) => LoginPage()),
+            (route) => false,
+          ),
     );
   }
 
@@ -35,7 +37,7 @@ class CustomAppbar extends StatelessWidget implements PreferredSizeWidget {
       actions: [
         IconButton(
           icon: Icon(Icons.logout_rounded, size: 30),
-          tooltip: '$role Logout',
+          tooltip: 'Logout Warning',
           onPressed: () => _showLogoutDialog(context),
         ),
       ],

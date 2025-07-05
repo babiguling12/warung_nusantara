@@ -5,6 +5,7 @@ import '../models/makanan.dart';
 import '../models/transaksi.dart';
 import '../models/transaksi_detail.dart';
 import '../models/users.dart';
+import '../models/transaksi_with_detail.dart';
 
 class DbHelper {
   static final DbHelper _instance = DbHelper.internal();
@@ -44,7 +45,9 @@ class DbHelper {
             CREATE TABLE transaksi (
               id INTEGER PRIMARY KEY AUTOINCREMENT,
               tanggal TEXT,
-              total DOUBLE
+              total DOUBLE,
+              kasir_id INTEGER,
+              FOREIGN KEY (kasir_id) REFERENCES users(id)
             )
           ''');
 
@@ -178,39 +181,83 @@ class DbHelper {
   ) async {
     final dbClient = await db;
 
-    int transaksiId = await dbClient.insert('transaksi', transaksi.toMap());
-    for (var detail in details) {
-      await dbClient.insert(
-        'transaksi_detail',
-        detail.copyWith(transaksi_id: transaksiId).toMap(),
-      );
+    await dbClient.transaction((txn) async {
+      int transaksiId = await txn.insert('transaksi', transaksi.toMap());
+      for (var detail in details) {
+        await txn.insert(
+          'transaksi_detail',
+          detail.copyWith(transaksi_id: transaksiId).toMap(),
+        );
 
-      // kurangi stok
-      await dbClient.rawUpdate(
-        '''
+        // kurangi stok
+        await txn.rawUpdate(
+          '''
         UPDATE makanan SET stok = stok - ? WHERE id = ?
-      ''',
-        [detail.qty, detail.makanan_id],
-      );
-    }
+        ''',
+          [detail.qty, detail.makanan_id],
+        );
+      }
+    });
   }
 
   // Menampilkan semua transaksi
-  Future<List<Transaksi>> getAllTransaksi() async {
+  Future<List<TransaksiWithDetail>> getAllTransaksi() async {
     final dbClient = await db;
-    final result = await dbClient.query('transaksi');
-    return result.map((e) => Transaksi.fromMap(e)).toList();
+
+    final transaksiList = await dbClient.rawQuery('''
+      SELECT t.id, t.tanggal, t.total, u.username as kasir
+      FROM transaksi t
+      JOIN users u ON t.kasir_id = u.id
+      ORDER BY t.tanggal DESC
+    ''');
+
+    List<TransaksiWithDetail> riwayat = [];
+
+    for (var trx in transaksiList) {
+      final detailList = await dbClient.rawQuery(
+        '''
+          SELECT td.qty, td.subtotal, m.nama as namaMakanan
+          FROM transaksi_detail td
+          JOIN makanan m ON td.makanan_id = m.id
+          WHERE td.transaksi_id = ?
+        ''',
+        [trx['id']],
+      );
+      List<TransaksiDetailWithNama> detailItems =
+          detailList.map((d) {
+            return TransaksiDetailWithNama(
+              qty: d['qty'] as int,
+              subtotal: (d['subtotal'] as num).toDouble(),
+              namaMakanan: d['namaMakanan'] as String,
+            );
+          }).toList();
+
+      riwayat.add(TransaksiWithDetail(
+        id: trx['id'] as int,
+        tanggal: trx['tanggal'] as String,
+        total: trx['total'] as double,
+        kasir: trx['kasir'] as String,
+        items: detailItems,
+      ));
+    }
+    return riwayat;
   }
 
-  // Menampilkan detail transaksi
-  Future<List<TransaksiDetail>> getTransaksiDetail(int transaksiId) async {
-    final dbClient = await db;
-    final result = await dbClient.query(
-      'transaksi_detail',
-      where: 'transaksi_id = ?',
-      whereArgs: [transaksiId],
-    );
-    return result.map((e) => TransaksiDetail.fromMap(e)).toList();
+  // Menampilkan makanan terlaris
+  String getMakananTerlaris(List<TransaksiWithDetail> data) {
+    Map<String, int> makananCounter = {};
+
+    for (var trx in data) {
+      for (var item in trx.items) {
+        makananCounter[item.namaMakanan] =
+            (makananCounter[item.namaMakanan] ?? 0) + item.qty;
+      }
+    }
+
+    if (makananCounter.isEmpty) return '-';
+
+    final sorted = makananCounter.entries.toList()..sort((a, b) => b.value.compareTo(a.value)); // descending
+    return sorted.first.key;
   }
 
   // ===================== LOGIN ======================== //
@@ -233,16 +280,23 @@ class DbHelper {
   // Menambah data kasir
   Future<void> insertUsers(Users users) async {
     final dbClient = await db;
-    await dbClient.insert('users', users.toMap());
+    await dbClient.insert(
+      'users',
+      {
+        'username': users.username,
+        'password': hashPassword(users.password),
+        'role': users.role,
+      },
+    );
   }
 
   Future<bool> isUsernameTaken(String username, {int? excludeId}) async {
     final dbClient = await db;
     final result = await dbClient.query(
       'users',
-      where: excludeId != null ? 'username = ? AND id != ?' : 'username = ?', 
+      where: excludeId != null ? 'username = ? AND id != ?' : 'username = ?',
       whereArgs: excludeId != null ? [username, excludeId] : [username],
-      // jika excludeId ada artinya sedang ada dalam mode edit, maka akan mengecek username yang sama namun tidak dengan id dia sendiri. 
+      // jika excludeId ada artinya sedang ada dalam mode edit, maka akan mengecek username yang sama namun tidak dengan id dia sendiri.
       // Jika excludeId tidak ada artinya sedang dalam mode tambah, maka hanya mengecek username yang sama saja
     );
     return result.isNotEmpty;
@@ -258,11 +312,7 @@ class DbHelper {
   // Hapus data user
   Future<void> deleteUsers(int id) async {
     final dbClient = await db;
-    await dbClient.delete(
-      'users',
-      where: 'id = ?',
-      whereArgs: [id],
-    );
+    await dbClient.delete('users', where: 'id = ?', whereArgs: [id]);
   }
 
   // Ubah data user
@@ -273,7 +323,7 @@ class DbHelper {
       {
         'username': users.username,
         'password': hashPassword(users.password),
-        'role' : users.role
+        'role': users.role,
       },
       where: 'id = ?',
       whereArgs: [users.id],

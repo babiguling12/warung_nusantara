@@ -47,6 +47,8 @@ class _LoginPageState extends State<LoginPage> {
       final prefs = await SharedPreferences.getInstance();
       await prefs.setBool('is_logged_in', true);
       await prefs.setString('role', user.role);
+      await prefs.setString('username', user.username);
+      await prefs.setInt('kasir_id', user.id!);
 
       // redirect sesuai role
       if (user.role == 'admin') {
