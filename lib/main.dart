@@ -2,10 +2,14 @@ import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:intl/date_symbol_data_local.dart';
 import 'package:warung_nusantara/views/login_page.dart';
+// import 'package:warung_nusantara/services/copy_database.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
   await initializeDateFormatting('id');
+
+  // await copyDatabaseFromAsset();
+
   runApp(const MyApp());
 }
 

@@ -23,6 +23,7 @@ class _TransaksiPageState extends State<TransaksiPage> {
   Map<Makanan, int> _keranjang = {};
 
   bool _isLoading = true;
+  
 
   @override
   void initState() {

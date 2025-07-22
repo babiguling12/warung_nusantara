@@ -1,5 +1,5 @@
 name: warung_nusantara
-description: "Aplikasi Warung Nusantara"
+description: "Aplikasi POS Warung Nusantara"
 # The following line prevents the package from being accidentally published to
 # pub.dev using `flutter pub publish`. This is preferred for private packages.
 publish_to: "none" # Remove this line if you wish to publish to pub.dev
@@ -97,6 +97,21 @@ flutter:
     - assets/lottie/person.json
     - assets/lottie/edit.json
     - assets/lottie/basket.json
+    # - assets/db/warung_nusantara.db
+    # - assets/image/ayam betutu.jpeg
+    # - assets/image/gudeg.jpeg
+    # - assets/image/kerak telor.jpeg
+    # - assets/image/papeda.jpeg
+    # - assets/image/pempek.jpeg
+    # - assets/image/rawon.jpeg
+    # - assets/image/rendang.jpeg
+    # - assets/image/sate madura.jpeg
+    # - assets/image/soto banjar.jpeg
+    # - assets/image/tinutuan.jpeg
+
+flutter_launcher_icons:
+  android: true
+  image_path: "assets/logos/logo.png"
 
   # An image asset can refer to one or more resolution-specific "variants", see
   # https://flutter.dev/to/resolution-aware-images
